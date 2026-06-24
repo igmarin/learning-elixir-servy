@@ -1,5 +1,7 @@
 # Servy
 
+Is my pragrmaticstudio.com learning app
+
 **TODO: Add description**
 
 ## Installation
