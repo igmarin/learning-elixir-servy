@@ -9,15 +9,16 @@ defmodule Servy.Handler do
   end
 
   def route(request) do
+    %{request | resp_body: "Bears, Lions, Dolphins, Eagles"}
   end
 
   def format_response(request) do
     """
     HTTP/1.1 200 OK
     Content-Type: text/html
-    Content-Length: 20
+    Content-Length: #{byte_size(request.resp_body)}
 
-    Bears, Lions, Tigers
+    #{request.resp_body}
     """
   end
 end
