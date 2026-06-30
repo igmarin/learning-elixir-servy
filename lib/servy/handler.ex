@@ -13,7 +13,7 @@ defmodule Servy.Handler do
   def rewrite_path(conv), do: conv
 
   defp log(conv) do
-    Logger.debug(inspect(conv))
+    Logger.info(inspect(conv))
     conv
   end
 
@@ -31,8 +31,13 @@ defmodule Servy.Handler do
     %{conv | resp_body: "Teddy, Smokey, Paddingtong", status: 200}
   end
 
-  def route(%{method: "GET", path: "/bears/" <> id} = conv),
-    do: %{conv | status: 200, resp_body: "Bear #{id}"}
+  def route(%{method: "GET", path: "/bears/" <> id} = conv) do
+    %{conv | status: 200, resp_body: "Bear #{id}"}
+  end
+
+  def route(%{method: "DELETE", path: "/bears/" <> id} = conv) do
+    %{conv | status: 200, resp_body: "Deleted Bear #{id}"}
+  end
 
   def route(%{path: path} = conv) do
     %{conv | resp_body: "#{path} Not Found", status: 404}

@@ -56,6 +56,12 @@ defmodule ServyTest.HandlerTest do
       assert routed.resp_body == "Bear 1"
     end
 
+    test "200 OK response Bear Deleted /bears/1" do
+      parsed = %{method: "DELETE", path: "/bears/1", resp_body: "", status: nil}
+      routed = Servy.Handler.route(parsed)
+      assert routed.resp_body == "Deleted Bear 1"
+    end
+
     test "not found" do
       parsed = %{method: "GET", path: "/notfound", resp_body: "", status: nil}
       routed = Servy.Handler.route(parsed)
