@@ -9,10 +9,7 @@ defmodule Servy.Handler do
     request |> log |> parse() |> rewrite_path() |> route() |> format_response()
   end
 
-  def rewrite_path(%{path: "/wildthings"} = conv) do
-    %{conv | path: "/wildlife"}
-  end
-
+  def rewrite_path(%{path: "/wildthings"} = conv), do: %{conv | path: "/wildlife"}
   def rewrite_path(conv), do: conv
 
   defp log(conv) do
@@ -26,20 +23,19 @@ defmodule Servy.Handler do
     %{method: method, path: path, resp_body: "", status: nil}
   end
 
-  def route(conv) do
-    route(conv, conv.method, conv.path)
-  end
-
-  def route(conv, "GET", "/wildlife") do
+  def route(%{method: "GET", path: "/wildlife"} = conv) do
     %{conv | resp_body: "Bears, Lions, Dolphins, Eagles", status: 200}
   end
 
-  def route(conv, "GET", "/bears") do
+  def route(%{method: "GET", path: "/bears"} = conv) do
     %{conv | resp_body: "Teddy, Smokey, Paddingtong", status: 200}
   end
 
-  def route(conv, _method, _path) do
-    %{conv | resp_body: "Not Found", status: 404}
+  def route(%{method: "GET", path: "/bears/" <> id} = conv),
+    do: %{conv | status: 200, resp_body: "Bear #{id}"}
+
+  def route(%{path: path} = conv) do
+    %{conv | resp_body: "#{path} Not Found", status: 404}
   end
 
   def format_response(request) do

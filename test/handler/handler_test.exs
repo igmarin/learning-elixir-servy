@@ -20,9 +20,9 @@ defmodule ServyTest.HandlerTest do
   @not_found_response_body """
   HTTP/1.1 404 Not Found
   Content-Type: text/html
-  Content-Length: 9
+  Content-Length: 19
 
-  Not Found
+  /notfound Not Found
   """
 
   describe "handle/1" do
@@ -50,11 +50,25 @@ defmodule ServyTest.HandlerTest do
       assert routed.resp_body == "Bears, Lions, Dolphins, Eagles"
     end
 
+    test "200 OK response Bear Found /bears/1" do
+      parsed = %{method: "GET", path: "/bears/1", resp_body: "", status: nil}
+      routed = Servy.Handler.route(parsed)
+      assert routed.resp_body == "Bear 1"
+    end
+
     test "not found" do
       parsed = %{method: "GET", path: "/notfound", resp_body: "", status: nil}
       routed = Servy.Handler.route(parsed)
 
-      assert routed.resp_body == "Not Found"
+      assert routed.resp_body == "/notfound Not Found"
+    end
+  end
+
+  describe "rewrite_path/1" do
+    test "rewrites the path for a GET request to /wildthings to /wildlife" do
+      parsed = %{method: "GET", path: "/wildthings", resp_body: "", status: nil}
+      rewritten = Servy.Handler.rewrite_path(parsed)
+      assert rewritten.path == "/wildlife"
     end
   end
 
@@ -74,7 +88,7 @@ defmodule ServyTest.HandlerTest do
       request = %{
         method: "GET",
         path: "/notfound",
-        resp_body: "Not Found",
+        resp_body: "/notfound Not Found",
         status: 404
       }
 
