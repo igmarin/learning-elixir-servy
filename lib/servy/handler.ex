@@ -5,10 +5,14 @@ defmodule Servy.Handler do
 
   require Logger
 
+  @page_dir Path.expand("../../pages", __DIR__)
+
+  @doc "Transforms an HTTP request into a response by parsing, routing, and formatting."
   def handle(request) do
     request |> log |> parse() |> rewrite_path() |> route() |> format_response()
   end
 
+  @doc "Rewrites the path of the request to map `/wildthings` to `/wildlife`."
   def rewrite_path(%{path: "/wildthings"} = conv), do: %{conv | path: "/wildlife"}
   def rewrite_path(conv), do: conv
 
@@ -17,11 +21,27 @@ defmodule Servy.Handler do
     conv
   end
 
+  @doc "Parses the request into a `Conv` struct."
   def parse(request) do
     [method, path, _] = request |> String.split("\n") |> List.first() |> String.split(" ")
 
     %{method: method, path: path, resp_body: "", status: nil}
   end
+
+  @doc "Handles the file response based on the file read result."
+  def handle_file({:ok, content}, conv), do: %{conv | status: 200, resp_body: content}
+  def handle_file({:error, :enoent}, conv), do: %{conv | status: 404, resp_body: "File not found"}
+  def handle_file({:error, reason}, conv), do: %{conv | status: 500, resp_body: reason}
+
+  @doc "Parses the name from the request path and handles the file response."
+  def parse_name(conv) do
+    file_name = Path.join(@page_dir, conv.path <> ".html")
+    handle_file(File.read(file_name), conv)
+  end
+
+  def route(%{method: "GET", path: "/about"} = conv), do: parse_name(conv)
+  def route(%{method: "GET", path: "/contact_us"} = conv), do: parse_name(conv)
+  def route(%{method: "GET", path: "/info" <> _name} = conv), do: parse_name(conv)
 
   def route(%{method: "GET", path: "/wildlife"} = conv) do
     %{conv | resp_body: "Bears, Lions, Dolphins, Eagles", status: 200}
