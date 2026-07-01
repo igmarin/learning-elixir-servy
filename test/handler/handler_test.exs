@@ -1,6 +1,6 @@
 defmodule ServyTest.HandlerTest do
   use ExUnit.Case
-  doctest Servy
+  doctest Servy.Handler
 
   @request """
   GET /wildlife HTTP/1.1
