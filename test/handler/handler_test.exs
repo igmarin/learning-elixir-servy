@@ -1,20 +1,20 @@
 defmodule ServyTest.HandlerTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   doctest Servy.Handler
 
-  @request """
-  GET /wildlife HTTP/1.1
-  Host: example.com
-  User-Agent: ExampleBrowser/1.0
-  Accept: */*
-  """
+  alias Servy.Handler
+  alias Servy.Test.Fixtures
+
+  @wildlife_body "Bears, Lions, Dolphins, Eagles"
+
+  @request Fixtures.request("GET", "/wildlife")
 
   @response_body """
   HTTP/1.1 200 OK
   Content-Type: text/html
   Content-Length: 30
 
-  Bears, Lions, Dolphins, Eagles
+  #{@wildlife_body}
   """
 
   @not_found_response_body """
@@ -27,70 +27,131 @@ defmodule ServyTest.HandlerTest do
 
   describe "handle/1" do
     test "processes the full request pipeline end-to-end" do
-      assert Servy.Handler.handle(@request) == @response_body
+      assert Handler.handle(@request) == @response_body
+    end
+
+    test "rewrites /wildthings to /wildlife before routing" do
+      request = Fixtures.request("GET", "/wildthings")
+      response = Handler.handle(request)
+
+      assert response =~ "HTTP/1.1 200 OK"
+      assert response =~ @wildlife_body
+    end
+
+    test "serves static HTML for /about" do
+      response = Handler.handle(Fixtures.request("GET", "/about"))
+
+      assert response =~ "HTTP/1.1 200 OK"
+      assert response =~ "<h1>About</h1>"
+    end
+
+    test "serves static HTML for /contact_us" do
+      response = Handler.handle(Fixtures.request("GET", "/contact_us"))
+
+      assert response =~ "HTTP/1.1 200 OK"
+      assert response =~ "<h1>Contact Us</h1>"
+    end
+
+    test "serves static HTML for nested /info paths" do
+      response = Handler.handle(Fixtures.request("GET", "/info/about_me"))
+
+      assert response =~ "HTTP/1.1 200 OK"
+      assert response =~ "<h1>About Me</h1>"
     end
   end
 
   describe "parse/1" do
-    test "extracts method, path, and initializes resp_body" do
-      assert Servy.Handler.parse(@request) == %{
-               method: "GET",
-               path: "/wildlife",
-               resp_body: "",
-               status: nil
-             }
+    test "extracts method, path, and initializes resp_body and status" do
+      assert Handler.parse(@request) == Fixtures.conv(method: "GET", path: "/wildlife")
+    end
+
+    test "reads only the request line from a multi-line request" do
+      request = """
+      POST /bears HTTP/1.1
+      Host: example.com
+      Content-Length: 0
+
+      """
+
+      assert Handler.parse(request) == Fixtures.conv(method: "POST", path: "/bears")
     end
   end
 
   describe "route/1" do
-    test "sets the response body on the parsed request" do
-      parsed = %{method: "GET", path: "/wildlife", resp_body: "", status: nil}
-      routed = Servy.Handler.route(parsed)
+    test "GET /wildlife returns the wildlife listing with 200" do
+      routed = Handler.route(Fixtures.conv(path: "/wildlife"))
 
-      assert routed.resp_body == "Bears, Lions, Dolphins, Eagles"
+      assert routed.status == 200
+      assert routed.resp_body == @wildlife_body
     end
 
-    test "200 OK response Bear Found /bears/1" do
-      parsed = %{method: "GET", path: "/bears/1", resp_body: "", status: nil}
-      routed = Servy.Handler.route(parsed)
+    test "GET /bears returns the bear names with 200" do
+      routed = Handler.route(Fixtures.conv(path: "/bears"))
+
+      assert routed.status == 200
+      assert routed.resp_body == "Teddy, Smokey, Paddingtong"
+    end
+
+    test "GET /bears/:id returns the bear id with 200" do
+      routed = Handler.route(Fixtures.conv(path: "/bears/1"))
+
+      assert routed.status == 200
       assert routed.resp_body == "Bear 1"
     end
 
-    test "200 OK response Bear Deleted /bears/1" do
-      parsed = %{method: "DELETE", path: "/bears/1", resp_body: "", status: nil}
-      routed = Servy.Handler.route(parsed)
+    test "DELETE /bears/:id returns a deletion message with 200" do
+      routed = Handler.route(Fixtures.conv(method: "DELETE", path: "/bears/1"))
+
+      assert routed.status == 200
       assert routed.resp_body == "Deleted Bear 1"
     end
 
-    test "not found" do
-      parsed = %{method: "GET", path: "/notfound", resp_body: "", status: nil}
-      routed = Servy.Handler.route(parsed)
+    test "unknown paths return 404 with a not-found message" do
+      routed = Handler.route(Fixtures.conv(path: "/notfound"))
 
+      assert routed.status == 404
       assert routed.resp_body == "/notfound Not Found"
+    end
+
+    test "GET /about delegates to the parser and serves HTML" do
+      routed = Handler.route(Fixtures.conv(path: "/about"))
+
+      assert routed.status == 200
+      assert routed.resp_body =~ "<h1>About</h1>"
     end
   end
 
   describe "format_response/1" do
-    test "builds a well-formed HTTP response string" do
-      request = %{
-        method: "GET",
-        path: "/wildlife",
-        resp_body: "Bears, Lions, Dolphins, Eagles",
-        status: 200
-      }
+    test "builds a well-formed 200 HTTP response string" do
+      request =
+        Fixtures.conv(
+          path: "/wildlife",
+          resp_body: @wildlife_body,
+          status: 200
+        )
 
-      assert Servy.Handler.format_response(request) == @response_body
+      assert Handler.format_response(request) == @response_body
     end
 
-    test "Not Found HTTP response" do
-      request = %{
-        method: "GET",
-        path: "/notfound",
-        resp_body: "/notfound Not Found",
-        status: 404
-      }
+    test "builds a well-formed 404 HTTP response string" do
+      request =
+        Fixtures.conv(
+          path: "/notfound",
+          resp_body: "/notfound Not Found",
+          status: 404
+        )
 
-      assert Servy.Handler.format_response(request) == @not_found_response_body
+      assert Handler.format_response(request) == @not_found_response_body
+    end
+
+    test "includes the correct reason phrase for each status code" do
+      for {status, phrase} <- [{201, "Created"}, {500, "Internal Server Error"}] do
+        response =
+          Fixtures.conv(resp_body: "body", status: status)
+          |> Handler.format_response()
+
+        assert response =~ "HTTP/1.1 #{status} #{phrase}"
+      end
     end
   end
 end

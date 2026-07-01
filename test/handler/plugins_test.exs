@@ -1,29 +1,57 @@
 defmodule ServyTest.PluginsTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   doctest Servy.Plugins
 
+  import ExUnit.CaptureLog
+
+  alias Servy.Plugins
+  alias Servy.Test.Fixtures
+
   describe "rewrite_path/1" do
-    test "/wildthings to /wildlife" do
-      conv = %{method: "GET", path: "/wildthings", resp_body: "", status: nil}
-      assert Servy.Plugins.rewrite_path(conv) == %{conv | path: "/wildlife"}
+    test "maps /wildthings to /wildlife" do
+      conv = Fixtures.conv(path: "/wildthings")
+      assert Plugins.rewrite_path(conv) == Fixtures.conv(path: "/wildlife")
     end
 
-    test "/anypath" do
-      conv = %{method: "GET", path: "/anypath", resp_body: "", status: nil}
-      assert Servy.Plugins.rewrite_path(conv) == %{conv | path: "/anypath"}
+    test "leaves all other paths unchanged" do
+      conv = Fixtures.conv(path: "/anypath")
+      assert Plugins.rewrite_path(conv) == conv
     end
   end
 
   describe "log/1" do
-    test "echo", do: assert(Servy.Plugins.log("echo") == "echo")
+    test "logs the conv and returns it unchanged" do
+      conv = Fixtures.conv(path: "/wildlife", method: "GET")
+
+      log =
+        capture_log(fn ->
+          assert Plugins.log(conv) == conv
+        end)
+
+      assert log =~ "/wildlife"
+      assert log =~ "GET"
+    end
   end
 
   describe "status_reason/1" do
-    test "200", do: assert(Servy.Plugins.status_reason(200) == "OK")
-    test "201", do: assert(Servy.Plugins.status_reason(201) == "Created")
-    test "401", do: assert(Servy.Plugins.status_reason(401) == "Unauthorized")
-    test "403", do: assert(Servy.Plugins.status_reason(403) == "Forbidden")
-    test "404", do: assert(Servy.Plugins.status_reason(404) == "Not Found")
-    test "500", do: assert(Servy.Plugins.status_reason(500) == "Internal Server Error")
+    @status_codes [
+      {200, "OK"},
+      {201, "Created"},
+      {401, "Unauthorized"},
+      {403, "Forbidden"},
+      {404, "Not Found"},
+      {500, "Internal Server Error"}
+    ]
+
+    for {code, phrase} <- @status_codes do
+      test "returns #{inspect(phrase)} for #{code}" do
+        assert Plugins.status_reason(unquote(code)) == unquote(phrase)
+      end
+    end
+
+    test "returns nil for unknown status codes" do
+      assert Plugins.status_reason(418) == nil
+      assert Plugins.status_reason(999) == nil
+    end
   end
 end

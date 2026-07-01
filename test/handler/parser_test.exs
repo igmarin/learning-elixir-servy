@@ -1,17 +1,48 @@
 defmodule ServyTest.ParserTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   doctest Servy.Parser
 
-  describe "handle_name/1" do
-    test "200 exists" do
-      conv = Servy.Parser.parse_name(%{method: "GET", path: "/about", resp_body: "", status: nil})
-      assert conv.path == "/about"
-      assert conv.status == 200
+  alias Servy.Parser
+  alias Servy.Test.Fixtures
+
+  describe "parse_name/1" do
+    test "returns 200 and HTML content when the page file exists" do
+      conv = Fixtures.conv(path: "/about")
+      result = Parser.parse_name(conv)
+
+      assert result.path == "/about"
+      assert result.status == 200
+      assert result.resp_body =~ "<h1>About</h1>"
+      assert result.resp_body =~ "<p>Hello</p>"
     end
 
-    test "404 doesn't exists" do
-      conv = Servy.Parser.parse_name(%{method: "GET", path: "/a", resp_body: "", status: nil})
-      assert conv.status == 404
+    test "loads /contact_us from the pages directory" do
+      result = Parser.parse_name(Fixtures.conv(path: "/contact_us"))
+
+      assert result.status == 200
+      assert result.resp_body =~ "<h1>Contact Us</h1>"
+    end
+
+    test "loads nested paths under /info" do
+      result = Parser.parse_name(Fixtures.conv(path: "/info/about_me"))
+
+      assert result.status == 200
+      assert result.resp_body =~ "<h1>About Me</h1>"
+    end
+
+    test "returns 404 when the page file does not exist" do
+      result = Parser.parse_name(Fixtures.conv(path: "/missing-page"))
+
+      assert result.status == 404
+      assert result.resp_body == "Not found"
+    end
+
+    test "preserves method and path on the conv" do
+      conv = Fixtures.conv(method: "GET", path: "/about")
+      result = Parser.parse_name(conv)
+
+      assert result.method == "GET"
+      assert result.path == "/about"
     end
   end
 end
