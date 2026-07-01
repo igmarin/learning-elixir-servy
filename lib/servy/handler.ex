@@ -4,8 +4,7 @@ defmodule Servy.Handler do
   """
 
   import Servy.Plugins, only: [log: 1, rewrite_path: 1, status_reason: 1]
-
-  @page_dir Path.expand("../../pages", __DIR__)
+  import Servy.Parser, only: [parse_name: 1]
 
   @doc "Transforms an HTTP request into a response by parsing, routing, and formatting."
   def handle(request) do
@@ -23,11 +22,6 @@ defmodule Servy.Handler do
 
     %{method: method, path: path, resp_body: "", status: nil}
   end
-
-  @doc "Handles the file response based on the file read result."
-  def handle_file({:ok, content}, conv), do: %{conv | status: 200, resp_body: content}
-  def handle_file({:error, :enoent}, conv), do: %{conv | status: 404, resp_body: "File not found"}
-  def handle_file({:error, reason}, conv), do: %{conv | status: 500, resp_body: reason}
 
   def route(%{method: "GET", path: "/about"} = conv), do: parse_name(conv)
   def route(%{method: "GET", path: "/contact_us"} = conv), do: parse_name(conv)
@@ -61,10 +55,5 @@ defmodule Servy.Handler do
 
     #{request.resp_body}
     """
-  end
-
-  defp parse_name(conv) do
-    file_name = Path.join(@page_dir, conv.path <> ".html")
-    handle_file(File.read(file_name), conv)
   end
 end

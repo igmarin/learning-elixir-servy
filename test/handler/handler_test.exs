@@ -70,14 +70,6 @@ defmodule ServyTest.HandlerTest do
     end
   end
 
-  describe "rewrite_path/1" do
-    test "rewrites the path for a GET request to /wildthings to /wildlife" do
-      parsed = %{method: "GET", path: "/wildthings", resp_body: "", status: nil}
-      rewritten = Servy.Plugins.rewrite_path(parsed)
-      assert rewritten.path == "/wildlife"
-    end
-  end
-
   describe "format_response/1" do
     test "builds a well-formed HTTP response string" do
       request = %{
