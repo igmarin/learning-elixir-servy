@@ -116,6 +116,10 @@ defmodule Servy.Handler do
     %{conv | status: 200, resp_body: "Deleted Bear #{id}"}
   end
 
+  def route(%Conv{method: "POST", path: "/bears"} = conv) do
+    %{conv | status: 201, resp_body: "Bear created!"}
+  end
+
   def route(%Conv{path: path} = conv) do
     %{conv | resp_body: "#{path} Not Found", status: 404}
   end

@@ -22,4 +22,15 @@ defmodule Servy.Test.Fixtures do
 
     """
   end
+
+  def request(method, path, body) do
+    """
+    #{method} #{path} HTTP/1.1
+    Host: example.com
+    User-Agent: ExampleBrowser/1.0
+    Accept: */*
+
+    #{body}
+    """
+  end
 end

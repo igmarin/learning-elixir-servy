@@ -8,6 +8,7 @@ defmodule ServyTest.HandlerTest do
   @wildlife_body "Bears, Lions, Dolphins, Eagles"
 
   @request Fixtures.request("GET", "/wildlife")
+  @post_request Fixtures.request("POST", "/bears", "name=Baloo&type=Brown")
 
   @response_body """
   HTTP/1.1 200 OK
@@ -104,6 +105,10 @@ defmodule ServyTest.HandlerTest do
 
       assert routed.status == 200
       assert routed.resp_body == "Deleted Bear 1"
+    end
+
+    test "POST /bears return a 201 Bear created" do
+      assert Handler.parse(@post_request) == Fixtures.conv(method: "POST", path: "/bears")
     end
 
     test "unknown paths return 404 with a not-found message" do
