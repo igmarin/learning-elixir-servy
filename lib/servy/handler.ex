@@ -30,7 +30,7 @@ defmodule Servy.Handler do
   """
 
   alias Servy.Conv
-  import Servy.Plugins, only: [log: 1, rewrite_path: 1, status_reason: 1]
+  import Servy.Plugins, only: [log: 1, rewrite_path: 1]
   import Servy.Parser, only: [parse_name: 1]
 
   @doc """
@@ -135,7 +135,7 @@ defmodule Servy.Handler do
   """
   def format_response(request) do
     """
-    HTTP/1.1 #{Conv.full_status(request)}
+    HTTP/1.1 #{Conv.display_status(request)}
     Content-Type: text/html
     Content-Length: #{byte_size(request.resp_body)}
 

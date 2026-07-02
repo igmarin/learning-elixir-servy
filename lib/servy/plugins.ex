@@ -41,32 +41,4 @@ defmodule Servy.Plugins do
     Logger.info(inspect(conv))
     conv
   end
-
-  @doc """
-  Returns the HTTP reason phrase for a status code.
-
-  Returns `nil` when the code is not in the lookup table.
-
-  ## Examples
-
-      iex> Servy.Plugins.status_reason(200)
-      "OK"
-
-      iex> Servy.Plugins.status_reason(404)
-      "Not Found"
-
-      iex> Servy.Plugins.status_reason(418)
-      nil
-
-  """
-  def status_reason(code) do
-    %{
-      200 => "OK",
-      201 => "Created",
-      401 => "Unauthorized",
-      403 => "Forbidden",
-      404 => "Not Found",
-      500 => "Internal Server Error"
-    }[code]
-  end
 end

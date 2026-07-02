@@ -32,26 +32,4 @@ defmodule ServyTest.PluginsTest do
       assert log =~ "GET"
     end
   end
-
-  describe "status_reason/1" do
-    @status_codes [
-      {200, "OK"},
-      {201, "Created"},
-      {401, "Unauthorized"},
-      {403, "Forbidden"},
-      {404, "Not Found"},
-      {500, "Internal Server Error"}
-    ]
-
-    for {code, phrase} <- @status_codes do
-      test "returns #{inspect(phrase)} for #{code}" do
-        assert Plugins.status_reason(unquote(code)) == unquote(phrase)
-      end
-    end
-
-    test "returns nil for unknown status codes" do
-      assert Plugins.status_reason(418) == nil
-      assert Plugins.status_reason(999) == nil
-    end
-  end
 end

@@ -1,6 +1,5 @@
 %Doctor.Config{
-  # Bare struct modules with only defstruct have no public API to document yet.
-  ignore_modules: [Servy.Conv],
+  ignore_modules: [],
   ignore_paths: [],
   min_module_doc_coverage: 100,
   min_module_spec_coverage: 0,

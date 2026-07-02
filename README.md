@@ -29,6 +29,7 @@ flowchart LR
 ```mermaid
 flowchart TB
     Handler["Servy.Handler\n(orchestrator)"]
+    Conv["Servy.Conv\nConv · display_status"]
     Plugins["Servy.Plugins\nlog · rewrite_path · status_reason"]
     Parser["Servy.Parser\nstatic HTML from pages/"]
     Conv["Servy.Conv\nstruct (learning step)"]
