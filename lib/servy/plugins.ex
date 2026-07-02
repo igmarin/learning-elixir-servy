@@ -2,9 +2,9 @@ defmodule Servy.Plugins do
   @moduledoc """
   Plug-style transformations used in the `Servy.Handler` request pipeline.
 
-  Each function accepts a conv map and returns an updated conv (or the same conv
-  when no change is needed). Functions are composed with the pipe operator in
-  `Servy.Handler.handle/1`.
+  Each function accepts a `%Servy.Conv{}` struct and returns an updated conv (or
+  the same conv when no change is needed). Functions are composed with the pipe
+  operator in `Servy.Handler.handle/1`.
   """
 
   alias Servy.Conv
@@ -30,7 +30,10 @@ defmodule Servy.Plugins do
   def rewrite_path(%Conv{} = conv), do: conv
 
   @doc """
-  Logs the conv at `:info` level and returns it unchanged.
+  Logs the given value at `:info` level and returns it unchanged.
+
+  In the handler pipeline this is the raw request string; later steps pass
+  `%Servy.Conv{}` structs.
 
   ## Examples
 

@@ -19,11 +19,10 @@ defmodule Servy.Conv do
       iex> conv.status
       nil
 
-  Handler functions may also pass plain maps with the same keys; both work with
-  `display_status/1`.
+  `display_status/1` also accepts plain maps with a `:status` key for flexibility.
   """
 
-  @typedoc "Conversation map flowing through the handler pipeline."
+  @typedoc "Conversation struct flowing through the handler pipeline."
   @type t :: %__MODULE__{
           method: String.t(),
           path: String.t(),
@@ -37,7 +36,7 @@ defmodule Servy.Conv do
   Formats the HTTP status line fragment as `"<code> <reason>"`.
 
   Used by `Servy.Handler.format_response/1` to build the response status line.
-  When the status code has no known reason phrase, only the code is returned.
+  When the status code has no known reason phrase, returns `"Status unknown"`.
 
   ## Examples
 

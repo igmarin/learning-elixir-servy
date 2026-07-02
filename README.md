@@ -8,10 +8,10 @@ responses — without a web framework.
 ## How it works
 
 A request flows through a pipeline of functions, each transforming a **conv**
-(conversation) map:
+(conversation) struct (`%Servy.Conv{}`):
 
 ```elixir
-%{method: "GET", path: "/wildlife", resp_body: "", status: nil}
+%Servy.Conv{method: "GET", path: "/wildlife", resp_body: "", status: nil}
 ```
 
 ```mermaid
@@ -29,10 +29,9 @@ flowchart LR
 ```mermaid
 flowchart TB
     Handler["Servy.Handler\n(orchestrator)"]
-    Conv["Servy.Conv\nConv · display_status"]
-    Plugins["Servy.Plugins\nlog · rewrite_path · status_reason"]
+    Conv["Servy.Conv\nstruct · display_status"]
+    Plugins["Servy.Plugins\nlog · rewrite_path"]
     Parser["Servy.Parser\nstatic HTML from pages/"]
-    Conv["Servy.Conv\nstruct (learning step)"]
 
     Handler --> Plugins
     Handler --> Parser
@@ -44,9 +43,9 @@ flowchart TB
 | Module | Responsibility |
 | --- | --- |
 | `Servy.Handler` | Orchestrates the pipeline; parses, routes, and formats responses |
-| `Servy.Plugins` | Cross-cutting transforms: logging, path rewriting, status phrases |
+| `Servy.Plugins` | Cross-cutting transforms: logging and path rewriting |
 | `Servy.Parser` | Serves static HTML from the `pages/` directory |
-| `Servy.Conv` | Struct for the conv shape (learning step toward typed pipelines) |
+| `Servy.Conv` | Typed conv struct; formats HTTP status lines via `display_status/1` |
 
 ## Routes
 
@@ -173,12 +172,12 @@ mix docs
 ```text
 lib/servy/
   handler.ex    # request pipeline and routing
-  plugins.ex    # logging, path rewrite, status phrases
+  plugins.ex    # logging and path rewrite
   parser.ex     # static page loader
-lib/conv.ex     # Conv struct (typed pipeline step)
+  conv.ex       # Conv struct and display_status/1
 pages/          # HTML templates served by Servy.Parser
 test/
-  support/      # shared test fixtures
+  support/      # shared test fixtures (conv/1, request/2)
   handler/      # tests per module
 ```
 

@@ -2,9 +2,9 @@ defmodule Servy.Handler do
   @moduledoc """
   Handles HTTP requests by parsing, routing, and formatting responses.
 
-  Requests flow through a **conv** (conversation) map:
+  Requests flow through a **conv** (conversation) struct (`%Servy.Conv{}`):
 
-      %{method: String.t(), path: String.t(), resp_body: String.t(), status: integer() | nil}
+      %Servy.Conv{method: "GET", path: "/wildlife", resp_body: "", status: nil}
 
   ## Pipeline
 
@@ -60,7 +60,7 @@ defmodule Servy.Handler do
   end
 
   @doc """
-  Parses the request line into a conv map.
+  Parses the request line into a conv struct.
 
   Only the first line of the request is read; headers and body are ignored.
 

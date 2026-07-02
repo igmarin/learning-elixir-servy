@@ -9,7 +9,7 @@ defmodule Servy.Test.Fixtures do
 
   @doc "Builds a conv struct with sensible defaults, merged with `overrides`."
   def conv(overrides \\ []) do
-    struct(Conv, overrides)
+    struct(%Conv{method: "GET", path: "/"}, overrides)
   end
 
   @doc "Builds a minimal HTTP/1.1 request string for the given method and path."
