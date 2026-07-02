@@ -1,16 +1,15 @@
 defmodule Servy.Test.Fixtures do
   @moduledoc """
-  Shared builders for request and conversation (`conv`) maps used in tests.
+  Shared builders for request and conversation (`conv`) structs used in tests.
 
-  A **conv** is the map that flows through the handler pipeline:
-
-      %{method: String.t(), path: String.t(), resp_body: String.t(), status: integer() | nil}
+  A **conv** is the `%Servy.Conv{}` struct that flows through the handler pipeline.
   """
 
-  @doc "Builds a conv map with sensible defaults, merged with `overrides`."
+  alias Servy.Conv
+
+  @doc "Builds a conv struct with sensible defaults, merged with `overrides`."
   def conv(overrides \\ []) do
-    %{method: "GET", path: "/", resp_body: "", status: nil}
-    |> Map.merge(Map.new(overrides))
+    struct(Conv, overrides)
   end
 
   @doc "Builds a minimal HTTP/1.1 request string for the given method and path."

@@ -7,6 +7,7 @@ defmodule Servy.Plugins do
   `Servy.Handler.handle/1`.
   """
 
+  alias Servy.Conv
   require Logger
 
   @doc """
@@ -16,17 +17,17 @@ defmodule Servy.Plugins do
 
   ## Examples
 
-      iex> conv = %{method: "GET", path: "/wildthings", resp_body: "", status: nil}
+      iex> conv = %Servy.Conv{method: "GET", path: "/wildthings"}
       iex> Servy.Plugins.rewrite_path(conv)
-      %{method: "GET", path: "/wildlife", resp_body: "", status: nil}
+      %Servy.Conv{method: "GET", path: "/wildlife", resp_body: "", status: nil}
 
-      iex> conv = %{method: "GET", path: "/bears", resp_body: "", status: nil}
+      iex> conv = %Servy.Conv{method: "GET", path: "/bears"}
       iex> Servy.Plugins.rewrite_path(conv)
-      %{method: "GET", path: "/bears", resp_body: "", status: nil}
+      %Servy.Conv{method: "GET", path: "/bears", resp_body: "", status: nil}
 
   """
-  def rewrite_path(%{path: "/wildthings"} = conv), do: %{conv | path: "/wildlife"}
-  def rewrite_path(conv), do: conv
+  def rewrite_path(%Conv{path: "/wildthings"} = conv), do: %{conv | path: "/wildlife"}
+  def rewrite_path(%Conv{} = conv), do: conv
 
   @doc """
   Logs the conv at `:info` level and returns it unchanged.
@@ -37,8 +38,8 @@ defmodule Servy.Plugins do
       "echo"
 
   """
-  def log(conv) do
-    Logger.info(inspect(conv))
-    conv
+  def log(value) do
+    Logger.info(inspect(value))
+    value
   end
 end

@@ -16,6 +16,7 @@ defmodule Servy.Parser do
   | `{:error, reason}`   | `500`  | `reason`     |
   """
 
+  alias Servy.Conv
   @page_dir Path.expand("../../pages", __DIR__)
 
   @doc """
@@ -23,19 +24,19 @@ defmodule Servy.Parser do
 
   ## Examples
 
-      iex> conv = %{method: "GET", path: "/about", resp_body: "", status: nil}
+      iex> conv = %Servy.Conv{method: "GET", path: "/about"}
       iex> result = Servy.Parser.parse_name(conv)
       iex> result.status
       200
       iex> result.resp_body =~ "<h1>About</h1>"
       true
 
-      iex> conv = %{method: "GET", path: "/does-not-exist", resp_body: "", status: nil}
+      iex> conv = %Servy.Conv{method: "GET", path: "/does-not-exist"}
       iex> Servy.Parser.parse_name(conv)
-      %{method: "GET", path: "/does-not-exist", resp_body: "Not found", status: 404}
+      %Servy.Conv{method: "GET", path: "/does-not-exist", resp_body: "Not found", status: 404}
 
   """
-  def parse_name(conv) do
+  def parse_name(%Conv{} = conv) do
     file_name = Path.join(@page_dir, conv.path <> ".html")
     handle_file(File.read(file_name), conv)
   end

@@ -68,13 +68,13 @@ defmodule Servy.Handler do
 
       iex> request = "GET /wildlife HTTP/1.1\\nHost: example.com\\n"
       iex> Servy.Handler.parse(request)
-      %{method: "GET", path: "/wildlife", resp_body: "", status: nil}
+      %Servy.Conv{method: "GET", path: "/wildlife", resp_body: "", status: nil}
 
   """
   def parse(request) do
     [method, path, _] = request |> String.split("\n") |> List.first() |> String.split(" ")
 
-    %{method: method, path: path, resp_body: "", status: nil}
+    %Conv{method: method, path: path}
   end
 
   @doc """
@@ -84,39 +84,39 @@ defmodule Servy.Handler do
 
   ## Examples
 
-      iex> conv = %{method: "GET", path: "/wildlife", resp_body: "", status: nil}
+      iex> conv = %Servy.Conv{method: "GET", path: "/wildlife"}
       iex> routed = Servy.Handler.route(conv)
       iex> routed.status
       200
       iex> routed.resp_body
       "Bears, Lions, Dolphins, Eagles"
 
-      iex> conv = %{method: "GET", path: "/unknown", resp_body: "", status: nil}
+      iex> conv = %Servy.Conv{method: "GET", path: "/unknown"}
       iex> Servy.Handler.route(conv).status
       404
 
   """
-  def route(%{method: "GET", path: "/about"} = conv), do: parse_name(conv)
-  def route(%{method: "GET", path: "/contact_us"} = conv), do: parse_name(conv)
-  def route(%{method: "GET", path: "/info" <> _name} = conv), do: parse_name(conv)
+  def route(%Conv{method: "GET", path: "/about"} = conv), do: parse_name(conv)
+  def route(%Conv{method: "GET", path: "/contact_us"} = conv), do: parse_name(conv)
+  def route(%Conv{method: "GET", path: "/info" <> _name} = conv), do: parse_name(conv)
 
-  def route(%{method: "GET", path: "/wildlife"} = conv) do
+  def route(%Conv{method: "GET", path: "/wildlife"} = conv) do
     %{conv | resp_body: "Bears, Lions, Dolphins, Eagles", status: 200}
   end
 
-  def route(%{method: "GET", path: "/bears"} = conv) do
+  def route(%Conv{method: "GET", path: "/bears"} = conv) do
     %{conv | resp_body: "Teddy, Smokey, Paddingtong", status: 200}
   end
 
-  def route(%{method: "GET", path: "/bears/" <> id} = conv) do
+  def route(%Conv{method: "GET", path: "/bears/" <> id} = conv) do
     %{conv | status: 200, resp_body: "Bear #{id}"}
   end
 
-  def route(%{method: "DELETE", path: "/bears/" <> id} = conv) do
+  def route(%Conv{method: "DELETE", path: "/bears/" <> id} = conv) do
     %{conv | status: 200, resp_body: "Deleted Bear #{id}"}
   end
 
-  def route(%{path: path} = conv) do
+  def route(%Conv{path: path} = conv) do
     %{conv | resp_body: "#{path} Not Found", status: 404}
   end
 
@@ -128,7 +128,7 @@ defmodule Servy.Handler do
 
   ## Examples
 
-      iex> conv = %{method: "GET", path: "/wildlife", resp_body: "Hello", status: 200}
+      iex> conv = %Servy.Conv{method: "GET", path: "/wildlife", resp_body: "Hello", status: 200}
       iex> Servy.Handler.format_response(conv)
       "HTTP/1.1 200 OK\\nContent-Type: text/html\\nContent-Length: 5\\n\\nHello\\n"
 
