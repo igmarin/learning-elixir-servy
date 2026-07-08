@@ -66,15 +66,27 @@ defmodule Servy.Handler do
 
   ## Examples
 
-      iex> request = "GET /wildlife HTTP/1.1\\nHost: example.com\\n"
+      iex> request = "GET /wildlife HTTP/1.1\\nHost: example.com\\n\\n"
       iex> Servy.Handler.parse(request)
-      %Servy.Conv{method: "GET", path: "/wildlife", resp_body: "", status: nil}
+      %Servy.Conv{method: "GET", path: "/wildlife", resp_body: "", status: nil, params: %{}}
+
+      iex> request = "POST /bears HTTP/1.1\\nHost: example.com\\n\\n"
+      iex> Servy.Handler.parse(request)
+      %Servy.Conv{method: "POST", path: "/bears", resp_body: "", status: nil, params: %{}}
 
   """
   def parse(request) do
-    [method, path, _] = request |> String.split("\n") |> List.first() |> String.split(" ")
+    [top, params_string] = String.split(request, "\n\n")
+    [request_line | header_lines] = String.split(top, "\n")
+    [method, path, _] = String.split(request_line, " ")
 
-    %Conv{method: method, path: path}
+    params = parse_params(params_string)
+
+    %Conv{method: method, path: path, params: params}
+  end
+
+  def parse_params(params_string) do
+    params_string |> String.trim() |> URI.decode_query()
   end
 
   @doc """
@@ -117,7 +129,7 @@ defmodule Servy.Handler do
   end
 
   def route(%Conv{method: "POST", path: "/bears"} = conv) do
-    %{conv | status: 201, resp_body: "Bear created!"}
+    %{conv | status: 201, resp_body: "#{inspect(conv.params)} created!"}
   end
 
   def route(%Conv{path: path} = conv) do

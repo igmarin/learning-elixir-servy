@@ -26,11 +26,12 @@ defmodule Servy.Conv do
   @type t :: %__MODULE__{
           method: String.t(),
           path: String.t(),
+          params: %{},
           resp_body: String.t(),
           status: non_neg_integer() | nil
         }
 
-  defstruct method: "", path: "", resp_body: "", status: nil
+  defstruct method: "", path: "", params: %{}, resp_body: "", status: nil
 
   @doc """
   Formats the HTTP status line fragment as `"<code> <reason>"`.
