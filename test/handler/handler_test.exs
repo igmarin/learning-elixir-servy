@@ -112,16 +112,17 @@ defmodule ServyTest.HandlerTest do
 
     test "GET /bears returns the bear names with 200" do
       routed = Handler.route(Fixtures.conv(path: "/bears"))
+      bear_list = Servy.Wildthings.get_bear_list()
 
       assert routed.status == 200
-      assert routed.resp_body == "Teddy, Smokey, Paddingtong"
+      assert routed.resp_body == "<ul>#{bear_list}</ul>"
     end
 
     test "GET /bears/:id returns the bear id with 200" do
       routed = Handler.route(Fixtures.conv(path: "/bears/1"))
 
       assert routed.status == 200
-      assert routed.resp_body == "Bear 1"
+      assert routed.resp_body == "<h1>Bear 1: Baloo</h1>"
     end
 
     test "DELETE /bears/:id returns a deletion message with 200" do

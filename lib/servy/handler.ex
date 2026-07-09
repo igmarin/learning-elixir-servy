@@ -30,6 +30,7 @@ defmodule Servy.Handler do
   """
 
   alias Servy.Conv
+  alias Servy.BearController
   import Servy.Plugins, only: [log: 1, rewrite_path: 1]
   import Servy.Parser, only: [parse_name: 1]
 
@@ -128,11 +129,11 @@ defmodule Servy.Handler do
   end
 
   def route(%Conv{method: "GET", path: "/bears"} = conv) do
-    %{conv | resp_body: "Teddy, Smokey, Paddingtong", status: 200}
+    BearController.index(conv)
   end
 
   def route(%Conv{method: "GET", path: "/bears/" <> id} = conv) do
-    %{conv | status: 200, resp_body: "Bear #{id}"}
+    BearController.show(conv, id)
   end
 
   def route(%Conv{method: "DELETE", path: "/bears/" <> id} = conv) do
