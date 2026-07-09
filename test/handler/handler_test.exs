@@ -8,7 +8,6 @@ defmodule ServyTest.HandlerTest do
   @wildlife_body "Bears, Lions, Dolphins, Eagles"
 
   @request Fixtures.request("GET", "/wildlife")
-  @post_request Fixtures.request("POST", "/bears", "name=Chester&type=Black")
 
   @response_body """
   HTTP/1.1 200 OK
@@ -63,13 +62,25 @@ defmodule ServyTest.HandlerTest do
 
   describe "parse/1" do
     test "extracts method, path, and initializes resp_body and status" do
-      assert Handler.parse(@request) == Fixtures.conv(method: "GET", path: "/wildlife")
+      assert Handler.parse(@request) ==
+               Fixtures.conv(
+                 method: "GET",
+                 path: "/wildlife",
+                 headers: %{
+                   "Accept" => "*/*",
+                   "Host" => "example.com",
+                   "User-Agent" => "ExampleBrowser/1.0"
+                 }
+               )
     end
 
     test "reads only the request line from a multi-line request" do
       request = """
       POST /bears HTTP/1.1
       Host: example.com
+      User-Agent: ExampleBrowser/1.0
+      Accept: */*
+      Content-Type: application/x-www-form-urlencoded
       Content-Length: 0
 
       name=Chester&type=Black
@@ -79,6 +90,13 @@ defmodule ServyTest.HandlerTest do
                Fixtures.conv(
                  method: "POST",
                  path: "/bears",
+                 headers: %{
+                   "Host" => "example.com",
+                   "User-Agent" => "ExampleBrowser/1.0",
+                   "Accept" => "*/*",
+                   "Content-Type" => "application/x-www-form-urlencoded",
+                   "Content-Length" => "0"
+                 },
                  params: %{"name" => "Chester", "type" => "Black"}
                )
     end
@@ -113,13 +131,18 @@ defmodule ServyTest.HandlerTest do
       assert routed.resp_body == "Deleted Bear 1"
     end
 
-    test "POST /bears return a 201 Bear created" do
-      assert Handler.parse(@post_request) ==
-               Fixtures.conv(
-                 method: "POST",
-                 path: "/bears",
-                 params: %{"name" => "Chester", "type" => "Black"}
-               )
+    test "POST /bears returns 201 with params" do
+      conv =
+        Fixtures.conv(
+          method: "POST",
+          path: "/bears",
+          params: %{"name" => "Chester", "type" => "Black"}
+        )
+
+      routed = Handler.route(conv)
+
+      assert routed.status == 201
+      assert routed.resp_body =~ "created!"
     end
 
     test "unknown paths return 404 with a not-found message" do

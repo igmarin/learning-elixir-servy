@@ -4,7 +4,7 @@ defmodule Servy.Handler do
 
   Requests flow through a **conv** (conversation) struct (`%Servy.Conv{}`):
 
-      %Servy.Conv{method: "GET", path: "/wildlife", resp_body: "", status: nil}
+      %Servy.Conv{headers: %{}, method: "GET", path: "/wildlife", resp_body: "", status: nil}
 
   ## Pipeline
 
@@ -68,11 +68,11 @@ defmodule Servy.Handler do
 
       iex> request = "GET /wildlife HTTP/1.1\\nHost: example.com\\n\\n"
       iex> Servy.Handler.parse(request)
-      %Servy.Conv{method: "GET", path: "/wildlife", resp_body: "", status: nil, params: %{}}
+      %Servy.Conv{headers: %{"Host" => "example.com"}, method: "GET", path: "/wildlife", resp_body: "", status: nil, params: %{}}
 
-      iex> request = "POST /bears HTTP/1.1\\nHost: example.com\\n\\n"
+      iex> request = "POST /bears HTTP/1.1\\nHost: example.com\\nContent-Type: application/x-www-form-urlencoded\\n\\nname=Chester&type=Black"
       iex> Servy.Handler.parse(request)
-      %Servy.Conv{method: "POST", path: "/bears", resp_body: "", status: nil, params: %{}}
+      %Servy.Conv{headers: %{"Host" => "example.com", "Content-Type" => "application/x-www-form-urlencoded"}, method: "POST", path: "/bears", resp_body: "", status: nil, params: %{"name" => "Chester", "type" => "Black"}}
 
   """
   def parse(request) do
@@ -80,14 +80,25 @@ defmodule Servy.Handler do
     [request_line | header_lines] = String.split(top, "\n")
     [method, path, _] = String.split(request_line, " ")
 
-    params = parse_params(params_string)
+    headers = parse_header(header_lines, %{})
+    params = parse_params(headers["Content-Type"], params_string)
 
-    %Conv{method: method, path: path, params: params}
+    %Conv{method: method, path: path, params: params, headers: headers}
   end
 
-  def parse_params(params_string) do
+  def parse_header([head | tail], headers) do
+    [key, value] = String.split(head, ": ")
+    headers = Map.put(headers, key, value)
+    parse_header(tail, headers)
+  end
+
+  def parse_header([], headers), do: headers
+
+  def parse_params("application/x-www-form-urlencoded", params_string) do
     params_string |> String.trim() |> URI.decode_query()
   end
+
+  def parse_params(_, _), do: %{}
 
   @doc """
   Matches the conv's method and path, setting `status` and `resp_body`.

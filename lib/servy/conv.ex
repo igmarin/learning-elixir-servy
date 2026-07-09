@@ -28,10 +28,11 @@ defmodule Servy.Conv do
           path: String.t(),
           params: %{},
           resp_body: String.t(),
+          headers: %{},
           status: non_neg_integer() | nil
         }
 
-  defstruct method: "", path: "", params: %{}, resp_body: "", status: nil
+  defstruct method: "", path: "", params: %{}, resp_body: "", headers: %{}, status: nil
 
   @doc """
   Formats the HTTP status line fragment as `"<code> <reason>"`.
