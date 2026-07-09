@@ -137,7 +137,7 @@ defmodule Servy.Handler do
   end
 
   def route(%Conv{method: "DELETE", path: "/bears/" <> id} = conv) do
-    %{conv | status: 200, resp_body: "Deleted Bear #{id}"}
+    BearController.delete(conv, id)
   end
 
   def route(%Conv{method: "POST", path: "/bears"} = conv) do

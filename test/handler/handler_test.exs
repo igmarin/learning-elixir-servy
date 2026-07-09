@@ -125,11 +125,11 @@ defmodule ServyTest.HandlerTest do
       assert routed.resp_body == "<h1>Bear 1: Baloo</h1>"
     end
 
-    test "DELETE /bears/:id returns a deletion message with 200" do
+    test "DELETE /bears/:id returns a deletion message with 403" do
       routed = Handler.route(Fixtures.conv(method: "DELETE", path: "/bears/1"))
 
-      assert routed.status == 200
-      assert routed.resp_body == "Deleted Bear 1"
+      assert routed.status == 403
+      assert routed.resp_body == "Delete a bear is Forbidden"
     end
 
     test "POST /bears returns 201 with params" do

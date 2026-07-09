@@ -27,12 +27,11 @@ defmodule Servy.Wildthings do
   end
 
   def get_bear_list() do
-    bear_list() |> Enum.map(&li_items/1) |> Enum.join("")
+    bear_list() |> Enum.map(&li_items/1) |> Enum.join()
   end
 
   def get_bear(id) when is_integer(id) do
-    bear_list()
-    |> Enum.find(fn bear -> bear.id == id end)
+    bear_list() |> Enum.find(&(&1.id == id))
   end
 
   def get_bear(id) when is_binary(id) do
