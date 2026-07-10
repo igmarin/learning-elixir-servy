@@ -89,7 +89,8 @@ defmodule Servy.MixProject do
       main: "readme",
       extras: ["README.md"],
       groups_for_modules: [
-        Core: [Servy.Handler, Servy.Parser, Servy.Plugins, Servy.Conv]
+        Core: [Servy.Handler, Servy.Parser, Servy.Plugins, Servy.Conv],
+        Bears: [Servy.BearController, Servy.BearView, Servy.Wildthings, Servy.Bear]
       ]
     ]
   end

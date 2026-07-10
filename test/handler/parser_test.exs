@@ -5,6 +5,10 @@ defmodule ServyTest.ParserTest do
   alias Servy.Parser
   alias Servy.Test.Fixtures
 
+  @pages_dir Path.expand("../../pages", __DIR__)
+  @eisdir_name "__cover_eisdir"
+  @eisdir_path Path.join(@pages_dir, @eisdir_name <> ".html")
+
   describe "parse_name/1" do
     test "returns 200 and HTML content when the page file exists" do
       conv = Fixtures.conv(path: "/about")
@@ -35,6 +39,16 @@ defmodule ServyTest.ParserTest do
 
       assert result.status == 404
       assert result.resp_body == "Not found"
+    end
+
+    test "returns 500 when the page path is a directory (non-enoent error)" do
+      File.mkdir_p!(@eisdir_path)
+      on_exit(fn -> File.rm_rf!(@eisdir_path) end)
+
+      result = Parser.parse_name(Fixtures.conv(path: "/#{@eisdir_name}"))
+
+      assert result.status == 500
+      assert result.resp_body == :eisdir
     end
 
     test "preserves method and path on the conv" do

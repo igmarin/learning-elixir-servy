@@ -21,3 +21,4 @@ servy-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+.rs-guard/cache/

@@ -17,7 +17,7 @@ A request flows through a pipeline of functions, each transforming a **conv**
 ```mermaid
 flowchart LR
     A["Raw HTTP request"] --> B["log\n(Servy.Plugins)"]
-    B --> C["parse\n(method + path)"]
+    B --> C["parse\n(method + path + headers + params)"]
     C --> D["rewrite_path\n(/wildthings → /wildlife)"]
     D --> E["route\n(status + body)"]
     E --> F["format_response"]
@@ -32,10 +32,19 @@ flowchart TB
     Conv["Servy.Conv\nstruct · display_status"]
     Plugins["Servy.Plugins\nlog · rewrite_path"]
     Parser["Servy.Parser\nstatic HTML from pages/"]
+    BearCtrl["Servy.BearController\nindex · show · delete"]
+    BearView["Servy.BearView\nEEx index · show"]
+    Wildthings["Servy.Wildthings\nbear catalog"]
+    Bear["Servy.Bear\nstruct"]
 
     Handler --> Plugins
     Handler --> Parser
+    Handler --> BearCtrl
     Handler -.-> Conv
+    BearCtrl --> Wildthings
+    BearCtrl --> BearView
+    Wildthings --> Bear
+    BearView -.-> Templates["templates/*.eex"]
 ```
 
 ## Modules
@@ -46,17 +55,33 @@ flowchart TB
 | `Servy.Plugins` | Cross-cutting transforms: logging and path rewriting |
 | `Servy.Parser` | Serves static HTML from the `pages/` directory |
 | `Servy.Conv` | Typed conv struct; formats HTTP status lines via `display_status/1` |
+| `Servy.BearController` | Bear actions: load data, set status/body on the conv |
+| `Servy.BearView` | Compiles `templates/*.eex` into `index/1` and `show/1` HTML helpers |
+| `Servy.Wildthings` | In-memory bear catalog (`bear_list/0`, `get_bear/1`) |
+| `Servy.Bear` | Bear struct (`id`, `name`, `type`, `hibernating`) |
+| `Recurse` | Practice recursion helpers (`loopy/1`, `factorial/1`) — not part of HTTP |
+
+### Bears: controller vs view
+
+- **`Servy.BearController`** — HTTP/action layer. Fetches bears from
+  `Wildthings`, calls the view, returns an updated conv (`status` + `resp_body`).
+- **`Servy.BearView`** — Presentation layer. Uses `EEx.function_from_file/4` so
+  templates under `templates/` become compiled functions (`index/1`, `show/1`).
+  Edit a `.eex` file, then recompile for changes to apply.
 
 ## Routes
 
 | Method | Path | Response |
 | --- | --- | --- |
-| `GET` | `/wildlife` | Wildlife listing |
-| `GET` | `/bears` | Bear names |
-| `GET` | `/bears/:id` | Single bear |
-| `DELETE` | `/bears/:id` | Deletion confirmation |
-| `GET` | `/about`, `/contact_us`, `/info/*` | HTML from `pages/` |
+| `GET` | `/wildlife` | `200` wildlife listing |
+| `GET` | `/bears` | `200` list HTML via `BearController.index` → `BearView.index` |
+| `GET` | `/bears/:id` | `200` show HTML via `BearController.show` → `BearView.show` |
+| `POST` | `/bears` | `201` with `inspect(params) created!` (form body) |
+| `DELETE` | `/bears/:id` | `403` `"Delete a bear is Forbidden"` |
+| `GET` | `/about`, `/contact_us`, `/info/*` | HTML from `pages/` (`200` / `404` / `500`) |
 | * | unmatched | `404` with `"{path} Not Found"` |
+
+`GET /wildthings` is rewritten to `/wildlife` before routing.
 
 ## Getting started
 
@@ -65,6 +90,44 @@ Requires Elixir `~> 1.18`.
 ```bash
 mix deps.get
 mix test
+```
+
+## Testing
+
+Tests live under `test/` and use shared builders in `Servy.Test.Fixtures`
+(`test/support/fixtures.ex`):
+
+| Helper | Purpose |
+| --- | --- |
+| `Fixtures.conv/0` / `conv/1` | Build a `%Servy.Conv{}` with overrides |
+| `Fixtures.request/2` | Minimal GET-style request string |
+| `Fixtures.request/3,4` | Request with body and optional `content_type` |
+| `Fixtures.form_request/3` | URL-encoded form POST with params map |
+
+Layout:
+
+```text
+test/
+  recurse_test.exs              # Recurse practice module
+  support/
+    fixtures.ex                 # shared builders (compiled in test)
+    fixtures_test.exs           # fixture contract tests
+  handler/
+    handler_test.exs            # pipeline, parse, route, format
+    parser_test.exs             # static pages
+    plugins_test.exs            # log + rewrite_path
+    conv_test.exs               # status phrases
+    bear_controller_test.exs    # index / show / delete
+    bear_view_test.exs          # compiled EEx views
+    wildthings_test.exs         # bear catalog
+```
+
+```bash
+# Full suite
+mix test
+
+# Suite with coverage summary (threshold: 80%)
+mix test.coverage
 ```
 
 ## Code quality (Ruby → Elixir)
@@ -170,15 +233,23 @@ mix docs
 ## Project layout
 
 ```text
-lib/servy/
-  handler.ex    # request pipeline and routing
-  plugins.ex    # logging and path rewrite
-  parser.ex     # static page loader
-  conv.ex       # Conv struct and display_status/1
-pages/          # HTML templates served by Servy.Parser
+lib/
+  recurse.ex              # recursion practice (loopy, factorial)
+  servy/
+    handler.ex            # request pipeline and routing
+    plugins.ex            # logging and path rewrite
+    parser.ex             # static page loader
+    conv.ex               # Conv struct and display_status/1
+    bear.ex               # Bear struct
+    bear_controller.ex    # bear actions (status + body on conv)
+    bear_view.ex          # compiled EEx views (index, show)
+    wildthings.ex         # in-memory bear data
+pages/                    # HTML files served by Servy.Parser
+templates/                # EEx templates compiled by BearView
 test/
-  support/      # shared test fixtures (conv/1, request/2)
-  handler/      # tests per module
+  support/                # shared fixtures + fixture tests
+  handler/                # tests per request module
+  recurse_test.exs
 ```
 
 ## Static pages
@@ -188,6 +259,8 @@ HTML files live under `pages/` and are resolved by path:
 - `/about` → `pages/about.html`
 - `/contact_us` → `pages/contact_us.html`
 - `/info/about_me` → `pages/info/about_me.html`
+
+Missing files yield `404`; other `File.read/1` errors yield `500`.
 
 ## Tools to explore later
 
