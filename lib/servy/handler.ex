@@ -132,11 +132,11 @@ defmodule Servy.Handler do
   end
 
   def route(%Conv{method: "GET", path: "/bears/" <> id} = conv) do
-    BearController.show(conv, id)
+    BearController.show(conv, %{"id" => id})
   end
 
   def route(%Conv{method: "DELETE", path: "/bears/" <> id} = conv) do
-    BearController.delete(conv, id)
+    BearController.delete(conv, %{"id" => id})
   end
 
   def route(%Conv{method: "POST", path: "/bears"} = conv) do

@@ -1,0 +1,1 @@
+<%= "<h1>Bear #{bear.id}: #{bear.name} is hibernating? #{inspect(bear.hibernating)}</h1>" %>

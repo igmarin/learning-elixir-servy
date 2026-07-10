@@ -22,23 +22,11 @@ defmodule Servy.Wildthings do
     ]
   end
 
-  def li_items(bear) do
-    "<li>#{bear.id}: #{bear.name}</li>"
-  end
-
-  def get_bear_list() do
-    bear_list() |> Enum.map(&li_items/1) |> Enum.join()
-  end
-
   def get_bear(id) when is_integer(id) do
     bear_list() |> Enum.find(&(&1.id == id))
   end
 
   def get_bear(id) when is_binary(id) do
     id |> String.to_integer() |> get_bear
-  end
-
-  def bear_title(bear) do
-    "<h1>Bear #{bear.id}: #{bear.name}</h1>"
   end
 end

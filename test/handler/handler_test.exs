@@ -111,22 +111,24 @@ defmodule ServyTest.HandlerTest do
     end
 
     test "GET /bears returns the bear names with 200" do
-      routed = Handler.route(Fixtures.conv(path: "/bears"))
-      bear_list = Servy.Wildthings.get_bear_list()
+      conv = Fixtures.conv(path: "/bears")
+      routed = Handler.route(conv)
 
       assert routed.status == 200
-      assert routed.resp_body == "<ul>#{bear_list}</ul>"
+      assert routed.resp_body == Servy.BearController.index(conv).resp_body
     end
 
     test "GET /bears/:id returns the bear id with 200" do
-      routed = Handler.route(Fixtures.conv(path: "/bears/1"))
+      conv = Fixtures.conv(path: "/bears/1")
+      routed = Handler.route(conv)
 
       assert routed.status == 200
-      assert routed.resp_body == "<h1>Bear 1: Baloo</h1>"
+      assert routed.resp_body == "<h1>Bear 1: Baloo is hibernating? true</h1>\n"
     end
 
     test "DELETE /bears/:id returns a deletion message with 403" do
-      routed = Handler.route(Fixtures.conv(method: "DELETE", path: "/bears/1"))
+      conv = Fixtures.conv(method: "DELETE", path: "/bears/1")
+      routed = Handler.route(conv)
 
       assert routed.status == 403
       assert routed.resp_body == "Delete a bear is Forbidden"

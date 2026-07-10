@@ -1,0 +1,5 @@
+<ul>
+  <%= for bear <- bears do %>
+    <li><%= "Bear #{bear.id}: #{bear.name}" %></li>
+  <% end %>
+</ul>
