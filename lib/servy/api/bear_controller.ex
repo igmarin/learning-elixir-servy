@@ -9,6 +9,7 @@ defmodule Servy.Api.BearController do
   | Action    | Method / path (via Handler) | Status | Body |
   |-----------|-----------------------------|--------|------|
   | `index/1` | `GET /api/bears`            | `200`  | JSON array of bears |
+  | `post/1` | `POST /api/bears`            | `201`  | JSON array of bears |
 
   Encoding uses [Jason](https://hex.pm/packages/jason).
   """
@@ -34,5 +35,10 @@ defmodule Servy.Api.BearController do
   def index(conv) do
     json = Jason.encode!(Servy.Wildthings.bear_list())
     %{conv | status: 200, resp_body: json, resp_content_type: "application/json"}
+  end
+
+  def create(conv, %{name: name, type: type}) do
+    json = Jason.encode!(%{name: name, type: type})
+    %{conv | status: 201, resp_body: json, resp_content_type: "application/json"}
   end
 end

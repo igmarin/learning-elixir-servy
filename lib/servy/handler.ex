@@ -184,6 +184,10 @@ defmodule Servy.Handler do
     %{conv | status: 201, resp_body: "#{inspect(conv.params)} created!"}
   end
 
+  def route(%Conv{method: "POST", path: "/api/bears"} = conv) do
+    ApiBearController.create(conv, resp_body: conv.params)
+  end
+
   def route(%Conv{path: path} = conv) do
     %{conv | resp_body: "#{path} Not Found", status: 404}
   end
