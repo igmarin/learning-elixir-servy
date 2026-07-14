@@ -6,5 +6,6 @@ defmodule Servy.Bear do
           hibernating: boolean() | false
         }
 
+  @derive Jason.Encoder
   defstruct [:id, :name, :type, hibernating: false]
 end

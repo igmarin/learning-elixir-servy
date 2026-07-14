@@ -13,6 +13,7 @@ defmodule ServyTest.BearControllerTest do
       assert result.resp_body =~ "<ul>"
       assert result.resp_body =~ "Bear 1: Baloo"
       assert result.resp_body =~ "Bear 2: Boo"
+      assert result.resp_content_type == "text/html"
     end
   end
 
@@ -23,6 +24,7 @@ defmodule ServyTest.BearControllerTest do
       assert result.status == 200
       assert result.resp_body =~ "Bear 1: Baloo"
       assert result.resp_body =~ "hibernating? true"
+      assert result.resp_content_type == "text/html"
     end
   end
 
@@ -33,6 +35,7 @@ defmodule ServyTest.BearControllerTest do
 
       assert result.status == 403
       assert result.resp_body == "Delete a bear is Forbidden"
+      assert result.resp_content_type == "text/html"
     end
   end
 end

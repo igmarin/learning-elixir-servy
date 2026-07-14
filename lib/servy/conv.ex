@@ -10,7 +10,10 @@ defmodule Servy.Conv do
 
     * `:method` - HTTP verb from the request line (e.g. `"GET"`)
     * `:path` - Request path (e.g. `"/wildlife"`)
+    * `:params` - Parsed request params map (form body when applicable)
+    * `:headers` - Request headers map (string keys and values)
     * `:resp_body` - Response body string, initially `""`
+    * `:resp_content_type` - Response `Content-Type`, default `"text/html"`
     * `:status` - HTTP status code as an integer, or `nil` before routing
 
   ## Examples
@@ -20,6 +23,7 @@ defmodule Servy.Conv do
       nil
 
   `display_status/1` also accepts plain maps with a `:status` key for flexibility.
+  Controllers may override `:resp_content_type` (e.g. JSON APIs use `"application/json"`).
   """
 
   @typedoc "Conversation struct flowing through the handler pipeline."
@@ -28,11 +32,18 @@ defmodule Servy.Conv do
           path: String.t(),
           params: %{},
           resp_body: String.t(),
+          resp_content_type: String.t(),
           headers: %{},
           status: non_neg_integer() | nil
         }
 
-  defstruct method: "", path: "", params: %{}, resp_body: "", headers: %{}, status: nil
+  defstruct method: "",
+            path: "",
+            params: %{},
+            resp_body: "",
+            resp_content_type: "text/html",
+            headers: %{},
+            status: nil
 
   @doc """
   Formats the HTTP status line fragment as `"<code> <reason>"`.
@@ -60,6 +71,26 @@ defmodule Servy.Conv do
       nil -> "Status unknown"
       phrase -> "#{status} #{phrase}"
     end
+  end
+
+  @doc """
+  Returns the response `Content-Type` header value for this conv.
+
+  Defaults to `"text/html"`. Controllers such as `Servy.Api.BearController`
+  set `resp_content_type` on the conv; `Servy.Handler.format_response/1`
+  interpolates this into the HTTP response headers.
+
+  ## Examples
+
+      iex> Servy.Conv.resp_content_type(%Servy.Conv{})
+      "text/html"
+
+      iex> Servy.Conv.resp_content_type(%Servy.Conv{resp_content_type: "application/json"})
+      "application/json"
+
+  """
+  def resp_content_type(%{resp_content_type: content_type}) do
+    content_type
   end
 
   defp status_reason(code) do

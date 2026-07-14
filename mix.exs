@@ -50,7 +50,8 @@ defmodule Servy.MixProject do
       {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false},
 
       # Documentation coverage report — closest to `yard stats`
-      {:doctor, "~> 0.23", only: [:dev, :test], runtime: false}
+      {:doctor, "~> 0.23", only: [:dev, :test], runtime: false},
+      {:jason, "~> 1.4"}
     ]
   end
 

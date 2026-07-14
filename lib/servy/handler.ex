@@ -20,9 +20,11 @@ defmodule Servy.Handler do
   | Method   | Path            | Response                          |
   |----------|-----------------|-----------------------------------|
   | `GET`    | `/wildlife`     | Wildlife listing                  |
-  | `GET`    | `/bears`        | Bear names                        |
-  | `GET`    | `/bears/:id`    | Single bear                       |
-  | `DELETE` | `/bears/:id`    | Deletion confirmation             |
+  | `GET`    | `/bears`        | Bear list HTML                    |
+  | `GET`    | `/bears/:id`    | Single bear HTML                  |
+  | `POST`   | `/bears`        | Create bear from form params      |
+  | `DELETE` | `/bears/:id`    | Forbidden (`403`)                 |
+  | `GET`    | `/api/bears`    | Bear list JSON (`application/json`) |
   | `GET`    | `/about`        | Static HTML from `pages/`         |
   | `GET`    | `/contact_us`   | Static HTML from `pages/`         |
   | `GET`    | `/info/*`       | Static HTML from `pages/info/`    |
@@ -31,6 +33,7 @@ defmodule Servy.Handler do
 
   alias Servy.Conv
   alias Servy.BearController
+  alias Servy.Api.BearController, as: ApiBearController
   import Servy.Plugins, only: [log: 1, rewrite_path: 1]
   import Servy.Parser, only: [parse_name: 1]
 
@@ -61,9 +64,10 @@ defmodule Servy.Handler do
   end
 
   @doc """
-  Parses the request line into a conv struct.
+  Parses a raw HTTP request into a conv struct.
 
-  Only the first line of the request is read; headers and body are ignored.
+  Extracts the request line (method, path), headers, and body params when
+  `Content-Type` is `application/x-www-form-urlencoded`.
 
   ## Examples
 
@@ -87,6 +91,21 @@ defmodule Servy.Handler do
     %Conv{method: method, path: path, params: params, headers: headers}
   end
 
+  @doc """
+  Parses header lines into a map of header name => value.
+
+  Each line must be `"Name: value"` (colon + space). Order of keys is not
+  significant; later lines with the same name overwrite earlier ones.
+
+  ## Examples
+
+      iex> Servy.Handler.parse_headers(["Host: example.com", "Accept: */*"])
+      %{"Host" => "example.com", "Accept" => "*/*"}
+
+      iex> Servy.Handler.parse_headers([])
+      %{}
+
+  """
   def parse_headers(header_lines) do
     Enum.reduce(header_lines, %{}, fn line, headers_so_far ->
       [key, value] = String.split(line, ": ")
@@ -94,6 +113,24 @@ defmodule Servy.Handler do
     end)
   end
 
+  @doc """
+  Parses the request body into a params map based on `Content-Type`.
+
+  Currently only `application/x-www-form-urlencoded` bodies are decoded via
+  `URI.decode_query/1`. Any other content type (or `nil`) yields `%{}`.
+
+  ## Examples
+
+      iex> Servy.Handler.parse_params("application/x-www-form-urlencoded", "name=Chester&type=Black")
+      %{"name" => "Chester", "type" => "Black"}
+
+      iex> Servy.Handler.parse_params("application/json", ~s({"name":"Chester"}))
+      %{}
+
+      iex> Servy.Handler.parse_params(nil, "name=Chester")
+      %{}
+
+  """
   def parse_params("application/x-www-form-urlencoded", params_string) do
     params_string |> String.trim() |> URI.decode_query()
   end
@@ -131,6 +168,10 @@ defmodule Servy.Handler do
     BearController.index(conv)
   end
 
+  def route(%Conv{method: "GET", path: "/api/bears"} = conv) do
+    ApiBearController.index(conv)
+  end
+
   def route(%Conv{method: "GET", path: "/bears/" <> id} = conv) do
     BearController.show(conv, %{"id" => id})
   end
@@ -150,8 +191,9 @@ defmodule Servy.Handler do
   @doc """
   Formats a conv into a complete HTTP/1.1 response string.
 
-  The response includes the status line, `Content-Type`, `Content-Length`,
-  a blank line, and the response body.
+  The response includes the status line, `Content-Type` (from
+  `Servy.Conv.resp_content_type/1`), `Content-Length`, a blank line, and the
+  response body.
 
   ## Examples
 
@@ -163,7 +205,7 @@ defmodule Servy.Handler do
   def format_response(request) do
     """
     HTTP/1.1 #{Conv.display_status(request)}
-    Content-Type: text/html
+    Content-Type: #{Conv.resp_content_type(request)}
     Content-Length: #{byte_size(request.resp_body)}
 
     #{request.resp_body}

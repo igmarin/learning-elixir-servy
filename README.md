@@ -29,10 +29,11 @@ flowchart LR
 ```mermaid
 flowchart TB
     Handler["Servy.Handler\n(orchestrator)"]
-    Conv["Servy.Conv\nstruct · display_status"]
+    Conv["Servy.Conv\nstruct · display_status · resp_content_type"]
     Plugins["Servy.Plugins\nlog · rewrite_path"]
     Parser["Servy.Parser\nstatic HTML from pages/"]
     BearCtrl["Servy.BearController\nindex · show · delete"]
+    ApiBearCtrl["Servy.Api.BearController\nindex (JSON)"]
     BearView["Servy.BearView\nEEx index · show"]
     Wildthings["Servy.Wildthings\nbear catalog"]
     Bear["Servy.Bear\nstruct"]
@@ -40,9 +41,11 @@ flowchart TB
     Handler --> Plugins
     Handler --> Parser
     Handler --> BearCtrl
+    Handler --> ApiBearCtrl
     Handler -.-> Conv
     BearCtrl --> Wildthings
     BearCtrl --> BearView
+    ApiBearCtrl --> Wildthings
     Wildthings --> Bear
     BearView -.-> Templates["templates/*.eex"]
 ```
@@ -54,8 +57,9 @@ flowchart TB
 | `Servy.Handler` | Orchestrates the pipeline; parses, routes, and formats responses |
 | `Servy.Plugins` | Cross-cutting transforms: logging and path rewriting |
 | `Servy.Parser` | Serves static HTML from the `pages/` directory |
-| `Servy.Conv` | Typed conv struct; formats HTTP status lines via `display_status/1` |
-| `Servy.BearController` | Bear actions: load data, set status/body on the conv |
+| `Servy.Conv` | Typed conv struct; `display_status/1`, `resp_content_type/1` |
+| `Servy.BearController` | Bear actions: load data, set status/body on the conv (HTML) |
+| `Servy.Api.BearController` | JSON API for bears (`GET /api/bears`, `application/json`) |
 | `Servy.BearView` | Compiles `templates/*.eex` into `index/1` and `show/1` HTML helpers |
 | `Servy.Wildthings` | In-memory bear catalog (`bear_list/0`, `get_bear/1`) |
 | `Servy.Bear` | Bear struct (`id`, `name`, `type`, `hibernating`) |
@@ -63,8 +67,10 @@ flowchart TB
 
 ### Bears: controller vs view
 
-- **`Servy.BearController`** — HTTP/action layer. Fetches bears from
+- **`Servy.BearController`** — HTTP/action layer for HTML. Fetches bears from
   `Wildthings`, calls the view, returns an updated conv (`status` + `resp_body`).
+- **`Servy.Api.BearController`** — JSON API layer. Same catalog data, encoded with
+  Jason and `resp_content_type: "application/json"`.
 - **`Servy.BearView`** — Presentation layer. Uses `EEx.function_from_file/4` so
   templates under `templates/` become compiled functions (`index/1`, `show/1`).
   Edit a `.eex` file, then recompile for changes to apply.
@@ -78,6 +84,7 @@ flowchart TB
 | `GET` | `/bears/:id` | `200` show HTML via `BearController.show` → `BearView.show` |
 | `POST` | `/bears` | `201` with `inspect(params) created!` (form body) |
 | `DELETE` | `/bears/:id` | `403` `"Delete a bear is Forbidden"` |
+| `GET` | `/api/bears` | `200` JSON list via `Api.BearController.index` (`application/json`) |
 | `GET` | `/about`, `/contact_us`, `/info/*` | HTML from `pages/` (`200` / `404` / `500`) |
 | * | unmatched | `404` with `"{path} Not Found"` |
 
@@ -118,6 +125,8 @@ test/
     plugins_test.exs            # log + rewrite_path
     conv_test.exs               # status phrases
     bear_controller_test.exs    # index / show / delete
+    api/
+      bear_controller_test.exs  # JSON API index
     bear_view_test.exs          # compiled EEx views
     wildthings_test.exs         # bear catalog
 ```
@@ -239,9 +248,11 @@ lib/
     handler.ex            # request pipeline and routing
     plugins.ex            # logging and path rewrite
     parser.ex             # static page loader
-    conv.ex               # Conv struct and display_status/1
+    conv.ex               # Conv struct, display_status/1, resp_content_type/1
     bear.ex               # Bear struct
     bear_controller.ex    # bear actions (status + body on conv)
+    api/
+      bear_controller.ex  # JSON API (application/json)
     bear_view.ex          # compiled EEx views (index, show)
     wildthings.ex         # in-memory bear data
 pages/                    # HTML files served by Servy.Parser

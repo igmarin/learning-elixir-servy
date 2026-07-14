@@ -94,6 +94,14 @@ defmodule ServyTest.HandlerTest do
       assert response =~ "Black"
     end
 
+    test "GET /api/bears returns JSON with application/json Content-Type" do
+      response = Handler.handle(Fixtures.request("GET", "/api/bears"))
+
+      assert response =~ "HTTP/1.1 200 OK"
+      assert response =~ "Content-Type: application/json"
+      assert response =~ "Baloo"
+    end
+
     test "unknown paths return 404 through the full pipeline" do
       response = Handler.handle(Fixtures.request("GET", "/notfound"))
 
@@ -175,6 +183,15 @@ defmodule ServyTest.HandlerTest do
       assert routed.resp_body == Servy.BearController.index(conv).resp_body
     end
 
+    test "GET /api/bears returns JSON with application/json content type" do
+      conv = Fixtures.conv(path: "/api/bears")
+      routed = Handler.route(conv)
+
+      assert routed.status == 200
+      assert routed.resp_content_type == "application/json"
+      assert routed.resp_body =~ "Baloo"
+    end
+
     test "GET /bears/:id returns the bear id with 200" do
       conv = Fixtures.conv(path: "/bears/1")
       routed = Handler.route(conv)
@@ -251,6 +268,14 @@ defmodule ServyTest.HandlerTest do
 
         assert response =~ "HTTP/1.1 #{status} #{phrase}"
       end
+    end
+
+    test "uses resp_content_type from the conv" do
+      response =
+        Fixtures.conv(resp_body: "{}", status: 200, resp_content_type: "application/json")
+        |> Handler.format_response()
+
+      assert response =~ "Content-Type: application/json"
     end
   end
 end
