@@ -12,9 +12,9 @@ defmodule ServyTest.Api.BearControllerTest do
     assert conv.resp_content_type == "application/json"
   end
 
-  test "POST /api/bears" do
+  test "create returns the created bear as JSON" do
     conv = Fixtures.conv(method: "POST", path: "/api/bears")
-    params = %{name: "Breezly", type: "Polar"}
+    params = %{"name" => "Breezly", "type" => "Polar"}
 
     result = ApiBearController.create(conv, params)
 

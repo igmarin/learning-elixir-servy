@@ -8,8 +8,8 @@ defmodule Servy.Api.BearController do
 
   | Action    | Method / path (via Handler) | Status | Body |
   |-----------|-----------------------------|--------|------|
-  | `index/1` | `GET /api/bears`            | `200`  | JSON array of bears |
-  | `post/1` | `POST /api/bears`            | `201`  | JSON array of bears |
+  | `index/1`  | `GET /api/bears`  | `200` | JSON array of bears |
+  | `create/2` | `POST /api/bears` | `201` | JSON of created bear |
 
   Encoding uses [Jason](https://hex.pm/packages/jason).
   """
@@ -37,7 +37,14 @@ defmodule Servy.Api.BearController do
     %{conv | status: 200, resp_body: json, resp_content_type: "application/json"}
   end
 
-  def create(conv, %{name: name, type: type}) do
+  @doc """
+  Creates a bear from JSON params (`201`, `Content-Type: application/json`).
+
+  Expects string keys `"name"` and `"type"` (as produced by
+  `Servy.Handler.parse_params/2` for `application/json` bodies). Echoes the
+  created bear as JSON. Persistence is not implemented yet.
+  """
+  def create(conv, %{"name" => name, "type" => type}) do
     json = Jason.encode!(%{name: name, type: type})
     %{conv | status: 201, resp_body: json, resp_content_type: "application/json"}
   end

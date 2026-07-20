@@ -25,6 +25,7 @@ defmodule Servy.Handler do
   | `POST`   | `/bears`        | Create bear from form params      |
   | `DELETE` | `/bears/:id`    | Forbidden (`403`)                 |
   | `GET`    | `/api/bears`    | Bear list JSON (`application/json`) |
+  | `POST`   | `/api/bears`    | Create bear JSON (`201`)          |
   | `GET`    | `/about`        | Static HTML from `pages/`         |
   | `GET`    | `/contact_us`   | Static HTML from `pages/`         |
   | `GET`    | `/info/*`       | Static HTML from `pages/info/`    |
@@ -67,7 +68,7 @@ defmodule Servy.Handler do
   Parses a raw HTTP request into a conv struct.
 
   Extracts the request line (method, path), headers, and body params when
-  `Content-Type` is `application/x-www-form-urlencoded`.
+  `Content-Type` is `application/x-www-form-urlencoded` or `application/json`.
 
   ## Examples
 
@@ -118,16 +119,20 @@ defmodule Servy.Handler do
   @doc """
   Parses the request body into a params map based on `Content-Type`.
 
-  Currently only `application/x-www-form-urlencoded` bodies are decoded via
-  `URI.decode_query/1`. Any other content type (or `nil`) yields `%{}`.
+  Supports:
+
+  * `application/x-www-form-urlencoded` via `URI.decode_query/1`
+  * `application/json` via `Jason.decode!/1` (string keys)
+
+  Any other content type (or `nil`) yields `%{}`.
 
   ## Examples
 
       iex> Servy.Handler.parse_params("application/x-www-form-urlencoded", "name=Chester&type=Black")
       %{"name" => "Chester", "type" => "Black"}
 
-      iex> Servy.Handler.parse_params("application/json", ~s({"name":"Chester"}))
-      %{}
+      iex> Servy.Handler.parse_params("application/json", ~s({"name":"Chester","type":"Black"}))
+      %{"name" => "Chester", "type" => "Black"}
 
       iex> Servy.Handler.parse_params(nil, "name=Chester")
       %{}
@@ -135,6 +140,10 @@ defmodule Servy.Handler do
   """
   def parse_params("application/x-www-form-urlencoded", params_string) do
     params_string |> String.trim() |> URI.decode_query()
+  end
+
+  def parse_params("application/json", params_string) do
+    params_string |> String.trim() |> Jason.decode!()
   end
 
   def parse_params(_, _), do: %{}
@@ -172,6 +181,10 @@ defmodule Servy.Handler do
 
   def route(%Conv{method: "GET", path: "/api/bears"} = conv) do
     ApiBearController.index(conv)
+  end
+
+  def route(%Conv{method: "POST", path: "/api/bears"} = conv) do
+    ApiBearController.create(conv, conv.params)
   end
 
   def route(%Conv{method: "GET", path: "/bears/" <> id} = conv) do

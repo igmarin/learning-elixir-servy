@@ -90,6 +90,27 @@ defmodule ServyTest.HandlerTest do
                  params: %{"name" => "Chester", "type" => "Black"}
                )
     end
+
+    test "parses JSON body params for application/json" do
+      body = ~s({"name":"Breezly","type":"Polar"})
+
+      request =
+        Fixtures.request("POST", "/api/bears", body, content_type: "application/json")
+
+      assert Handler.parse(request) ==
+               Fixtures.conv(
+                 method: "POST",
+                 path: "/api/bears",
+                 headers: %{
+                   "Host" => "example.com",
+                   "User-Agent" => "ExampleBrowser/1.0",
+                   "Accept" => "*/*",
+                   "Content-Type" => "application/json",
+                   "Content-Length" => "#{byte_size(body)}"
+                 },
+                 params: %{"name" => "Breezly", "type" => "Polar"}
+               )
+    end
   end
 
   describe "route/1" do
@@ -135,6 +156,21 @@ defmodule ServyTest.HandlerTest do
 
       assert routed.status == 201
       assert routed.resp_body =~ "created!"
+    end
+
+    test "POST /api/bears returns 201 with JSON body" do
+      conv =
+        Fixtures.conv(
+          method: "POST",
+          path: "/api/bears",
+          params: %{"name" => "Breezly", "type" => "Polar"}
+        )
+
+      routed = Handler.route(conv)
+
+      assert routed.status == 201
+      assert routed.resp_content_type == "application/json"
+      assert routed.resp_body == Jason.encode!(%{name: "Breezly", type: "Polar"})
     end
 
     test "unknown paths return 404 with a not-found message" do

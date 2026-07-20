@@ -85,6 +85,7 @@ flowchart TB
 | `POST` | `/bears` | `201` with `inspect(params) created!` (form body) |
 | `DELETE` | `/bears/:id` | `403` `"Delete a bear is Forbidden"` |
 | `GET` | `/api/bears` | `200` JSON list via `Api.BearController.index` (`application/json`) |
+| `POST` | `/api/bears` | `201` JSON create via `Api.BearController.create` (`application/json`) |
 | `GET` | `/about`, `/contact_us`, `/info/*` | HTML from `pages/` (`200` / `404` / `500`) |
 | * | unmatched | `404` with `"{path} Not Found"` |
 
