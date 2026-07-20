@@ -81,6 +81,8 @@ defmodule Servy.Handler do
 
   """
   def parse(request) do
+    request = String.replace(request, "\r\n", "\n")
+
     [top, params_string] = String.split(request, "\n\n")
     [request_line | header_lines] = String.split(top, "\n")
     [method, path, _] = String.split(request_line, " ")

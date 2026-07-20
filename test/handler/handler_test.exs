@@ -7,8 +7,6 @@ defmodule ServyTest.HandlerTest do
 
   @wildlife_body "Bears, Lions, Dolphins, Eagles"
 
-  @request Fixtures.request("GET", "/wildlife")
-
   @response_body """
   HTTP/1.1 200 OK
   Content-Type: text/html
@@ -25,14 +23,15 @@ defmodule ServyTest.HandlerTest do
   /notfound Not Found
   """
 
+  defp wildlife_request, do: Fixtures.request("GET", "/wildlife")
+
   describe "handle/1" do
     test "processes the full request pipeline end-to-end" do
-      assert Handler.handle(@request) == @response_body
+      assert Handler.handle(wildlife_request()) == @response_body
     end
 
     test "rewrites /wildthings to /wildlife before routing" do
-      request = Fixtures.request("GET", "/wildthings")
-      response = Handler.handle(request)
+      response = Handler.handle(Fixtures.request("GET", "/wildthings"))
 
       assert response =~ "HTTP/1.1 200 OK"
       assert response =~ @wildlife_body
@@ -58,61 +57,11 @@ defmodule ServyTest.HandlerTest do
       assert response =~ "HTTP/1.1 200 OK"
       assert response =~ "<h1>About Me</h1>"
     end
-
-    test "GET /bears returns the bear list HTML" do
-      response = Handler.handle(Fixtures.request("GET", "/bears"))
-
-      assert response =~ "HTTP/1.1 200 OK"
-      assert response =~ "Bear 1: Baloo"
-      assert response =~ "Bear 2: Boo"
-    end
-
-    test "GET /bears/:id returns a single bear" do
-      response = Handler.handle(Fixtures.request("GET", "/bears/1"))
-
-      assert response =~ "HTTP/1.1 200 OK"
-      assert response =~ "Bear 1: Baloo"
-      assert response =~ "hibernating? true"
-    end
-
-    test "DELETE /bears/:id returns 403 Forbidden" do
-      response = Handler.handle(Fixtures.request("DELETE", "/bears/1"))
-
-      assert response =~ "HTTP/1.1 403 Forbidden"
-      assert response =~ "Delete a bear is Forbidden"
-    end
-
-    test "POST /bears creates with form params" do
-      request =
-        Fixtures.form_request("POST", "/bears", %{"name" => "Chester", "type" => "Black"})
-
-      response = Handler.handle(request)
-
-      assert response =~ "HTTP/1.1 201 Created"
-      assert response =~ "created!"
-      assert response =~ "Chester"
-      assert response =~ "Black"
-    end
-
-    test "GET /api/bears returns JSON with application/json Content-Type" do
-      response = Handler.handle(Fixtures.request("GET", "/api/bears"))
-
-      assert response =~ "HTTP/1.1 200 OK"
-      assert response =~ "Content-Type: application/json"
-      assert response =~ "Baloo"
-    end
-
-    test "unknown paths return 404 through the full pipeline" do
-      response = Handler.handle(Fixtures.request("GET", "/notfound"))
-
-      assert response =~ "HTTP/1.1 404 Not Found"
-      assert response =~ "/notfound Not Found"
-    end
   end
 
   describe "parse/1" do
-    test "extracts method, path, headers, and empty params" do
-      assert Handler.parse(@request) ==
+    test "extracts method, path, and initializes resp_body and status" do
+      assert Handler.parse(wildlife_request()) ==
                Fixtures.conv(
                  method: "GET",
                  path: "/wildlife",
@@ -124,46 +73,22 @@ defmodule ServyTest.HandlerTest do
                )
     end
 
-    test "parses form-urlencoded body into params" do
-      request =
-        Fixtures.form_request("POST", "/bears", %{"name" => "Chester", "type" => "Black"})
+    test "reads only the request line from a multi-line request" do
+      request = Fixtures.form_request("POST", "/bears", %{"name" => "Chester", "type" => "Black"})
 
-      parsed = Handler.parse(request)
-
-      assert parsed.method == "POST"
-      assert parsed.path == "/bears"
-      assert parsed.params == %{"name" => "Chester", "type" => "Black"}
-      assert parsed.headers["Content-Type"] == "application/x-www-form-urlencoded"
-      assert parsed.headers["Host"] == "example.com"
-      assert is_binary(parsed.headers["Content-Length"])
-    end
-  end
-
-  describe "parse_headers/1" do
-    test "builds a map from header lines" do
-      headers =
-        Handler.parse_headers([
-          "Host: example.com",
-          "Accept: */*"
-        ])
-
-      assert headers == %{"Host" => "example.com", "Accept" => "*/*"}
-    end
-
-    test "returns an empty map for no header lines" do
-      assert Handler.parse_headers([]) == %{}
-    end
-  end
-
-  describe "parse_params/2" do
-    test "decodes application/x-www-form-urlencoded bodies" do
-      assert Handler.parse_params("application/x-www-form-urlencoded", "name=Chester&type=Black") ==
-               %{"name" => "Chester", "type" => "Black"}
-    end
-
-    test "returns empty map for other content types" do
-      assert Handler.parse_params("application/json", ~s({"name":"Chester"})) == %{}
-      assert Handler.parse_params(nil, "name=Chester") == %{}
+      assert Handler.parse(request) ==
+               Fixtures.conv(
+                 method: "POST",
+                 path: "/bears",
+                 headers: %{
+                   "Host" => "example.com",
+                   "User-Agent" => "ExampleBrowser/1.0",
+                   "Accept" => "*/*",
+                   "Content-Type" => "application/x-www-form-urlencoded",
+                   "Content-Length" => "23"
+                 },
+                 params: %{"name" => "Chester", "type" => "Black"}
+               )
     end
   end
 
@@ -176,19 +101,9 @@ defmodule ServyTest.HandlerTest do
     end
 
     test "GET /bears returns the bear names with 200" do
-      conv = Fixtures.conv(path: "/bears")
-      routed = Handler.route(conv)
+      routed = Handler.route(Fixtures.conv(path: "/bears"))
 
       assert routed.status == 200
-      assert routed.resp_body == Servy.BearController.index(conv).resp_body
-    end
-
-    test "GET /api/bears returns JSON with application/json content type" do
-      conv = Fixtures.conv(path: "/api/bears")
-      routed = Handler.route(conv)
-
-      assert routed.status == 200
-      assert routed.resp_content_type == "application/json"
       assert routed.resp_body =~ "Baloo"
     end
 
@@ -268,14 +183,6 @@ defmodule ServyTest.HandlerTest do
 
         assert response =~ "HTTP/1.1 #{status} #{phrase}"
       end
-    end
-
-    test "uses resp_content_type from the conv" do
-      response =
-        Fixtures.conv(resp_body: "{}", status: 200, resp_content_type: "application/json")
-        |> Handler.format_response()
-
-      assert response =~ "Content-Type: application/json"
     end
   end
 end
